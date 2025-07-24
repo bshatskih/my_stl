@@ -95,16 +95,38 @@ void vector<T>::resize(size_t n, const T& value) {
 template <typename T>
 void vector<T>::push_back(const T& value) {
     if (sz_ == cap_) {
-        reserve(cap_ > 0 ? cap_ * 2 : 1);
-    }
+        size_t new_cap = cap_ != 0 ? cap_ * 2 : 1;
+        T* new_arr = reinterpret_cast<T*>(new std::byte[new_cap * sizeof(T)]);
 
-    /*
-    Если при создании объекта T(value), будет брошено исключение, то sz_ не увеличится и наш вектор останется 
-    в исходном состоянии
-    ! Ответственность за ресурсы, которые могли быть выделены при создании T(value) лежит на
-    конструкторе этого объекта  
-    */
-    new(arr_ + sz_) T(value);
+        size_t i = 0;
+        try {
+            for (; i < sz_; ++i) {
+                new(new_arr + i) T(arr_[i]);
+            }
+            new(new_arr + sz_) T(value);
+        } catch (...) {
+            for (size_t j = 0; j < i; ++j) {
+                (new_arr + i)->~T();
+            }
+            delete[] reinterpret_cast<std::byte*>(new_arr);
+            throw;
+        }
+
+        for (size_t i = 0; i < sz_; ++i) {
+            (arr_ + 1)->~T();
+        }
+        delete[] reinterpret_cast<std::byte*>(arr_);
+        arr_ = new_arr;
+        cap_ = new_cap;
+    } else {
+        /*
+        Если при создании объекта T(value), будет брошено исключение, то sz_ не увеличится и наш вектор останется 
+        в исходном состоянии
+        ! Ответственность за ресурсы, которые могли быть выделены при создании T(value) лежит на
+        конструкторе этого объекта  
+        */
+        new(arr_ + sz_) T(value);
+    }
     ++sz_;
     return;
 }
