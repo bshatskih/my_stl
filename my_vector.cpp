@@ -6,14 +6,20 @@ vector<T>::vector() : sz_(0), cap_(0), arr_(nullptr) {}
 
 
 template <typename T>
-size_t vector<T>::size() const {
+size_t vector<T>::size() const noexcept {
     return sz_;
 }
 
 
 template <typename T>
-size_t vector<T>::capasity() const {
+size_t vector<T>::capasity() const noexcept {
     return cap_;
+}
+
+
+template <typename T>
+bool vector<T>::empty() const noexcept{
+    return sz_ == 0;
 }
 
 
@@ -72,22 +78,55 @@ void vector<T>::reserve(size_t new_cap) {
 
 template <typename T>
 void vector<T>::resize(size_t n, const T& value) {
-    if (n > cap_) {
-        reserve(n);
-    }
-    size_t i = sz_;
-    try {
-        for (; i < n; ++i) {
-            new (arr_ + i) T(value);
-        }
-    } catch (...) {
-        for (size_t j = sz_; j < i; ++j) {
+
+    if (n < sz_) {
+        for (size_t i = n; i < sz_; ++i) {
             (arr_ + i)->~T();
         }
+    } else if (n > sz_ && n <= cap_) {
+        size_t i = sz_;
+        try {
+            for (; i < n; ++i) {
+                new(arr_ + i) T(value);
+            }
+        } catch (...) {
+            for (size_t j = sz_; j < i; ++j) {
+                (arr_ + j)->~T();
+            }
+            throw;
+        }
+    } else {
+        size_t new_cap = cap_ != 0 ? cap_ * 2 : 1;
+        if (new_cap < n) {
+            new_cap = n;
+        }
+        T* new_arr = reinterpret_cast<T*>(new std::byte[new_cap * sizeof(T)]);
+
+        size_t i = 0;
+        try {
+            for (; i < sz_; ++i) {
+                new(new_arr + i) T(arr_[i]);
+            }
+
+            for (; i < n; ++i) {
+                new(new_arr + i) T(value);
+            }
+        } catch (...) {
+            for (size_t j = 0; j < i; ++j) {
+                (new_arr + j)->~T();
+            }
+
+            delete[] reinterpret_cast<std::byte*>(new_arr);
+            throw;
+        }
+
+        delete[] reinterpret_cast<std::byte*>(arr_);
+        arr_ = new_arr;
+        cap_ = new_cap;
     }
-    if (n < sz_) {
-        sz_  = n;
-    }
+
+    
+    sz_ = n;
     return;
 }
 
@@ -134,6 +173,10 @@ void vector<T>::push_back(const T& value) {
 
 template <typename T>
 void vector<T>::pop_back() {
+    /*
+    Было бы славно добавить проверку вектора на наличия в нём элементов, но поскольку в stl это не реализовано я также не буду этого делать,
+    то есть pop_back, вызванная для пустого ветора приведёт к UB
+    */
     --sz_;
     (arr_ + sz_)->~T();
     return;

@@ -14,8 +14,9 @@ class vector {
 
     vector();
 
-    size_t size() const;
-    size_t capasity() const;
+    [[nodiscard]] size_t size() const noexcept;
+    [[nodiscard]] size_t capasity() const noexcept;
+    [[nodiscard]] bool empty() const noexcept;
     void reserve(size_t n);
     void resize(size_t n, const T& value = T());
     void push_back(const T& value);
