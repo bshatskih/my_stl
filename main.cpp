@@ -1,6 +1,6 @@
 #include <iostream>
 #include <vector>
-#include "my_vector.h"
+#include "vector.h"
 
 
 
@@ -33,5 +33,38 @@ int main() {
     b.resize(3);
 
     std::cout << '\n';
+
+    vector<int> test;
+
+    test.push_back(1);
+    test.push_back(3);
+    test.push_back(-2);
+    test.push_back(8);
+    test.push_back(2);
+    test.push_back(-12);
+    test.push_back(17);
+    test.push_back(5);
+
+
+
+    vector<int>::iterator it = test.begin();
+    std::cout << *it;
+
+
+    int* ptr;
+    std::vector<int>::iterator iter_1;
+    std::vector<int>::iterator iter_2; 
+    ++iter_1;
+    iter_1++;
+    --iter_1;
+    iter_1--;
+
+    if (iter_1 > iter_2) {
+        std::cout << "   ";
+    }
+
+
+
+
     return 0;
 }
