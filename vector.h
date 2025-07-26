@@ -26,11 +26,20 @@ class vector {
     }
 
 
-    const_iterator cbegin() {
+    const_iterator begin() const {
         return const_iterator(arr_);
     }
 
-    const_iterator cend() {
+    const_iterator end() const {
+        return const_iterator(arr_ + sz_);
+    }
+
+
+    const_iterator cbegin() const {
+        return const_iterator(arr_);
+    }
+
+    const_iterator cend() const {
         return const_iterator(arr_ + sz_);
     }
 

@@ -16,7 +16,9 @@ struct S
 
 int main() {
     std::vector<int> a(5);
-    a.push_back(4);
+    a.push_back(111);
+
+    std::cout << a.begin()[5] << '\n';
 
     // std::cout << "a_size  " << *reinterpret_cast<int**>(static_cast<std::byte*>(static_cast<void*>(&a)) + sizeof(ptrdiff_t)) 
     //                             - *reinterpret_cast<int**>(&a) << '\n';
@@ -27,13 +29,7 @@ int main() {
     // Мы убедились, что вектор хранит под собой три указателя - на начало выделенной памяти, 
     // на конец используемой памяти и на конец выделенной памяти
 
-
-    std::vector<S> b(5);
-
-    b.resize(3);
-
-    std::cout << '\n';
-
+;
     vector<int> test;
 
     test.push_back(1);
@@ -46,9 +42,13 @@ int main() {
     test.push_back(5);
 
 
+    
+
+
 
     vector<int>::iterator it = test.begin();
-    std::cout << *it;
+    vector<int>::iterator it_1 = it.operator+(7);
+    // std::cout << *(6);
 
 
     int* ptr;
@@ -71,6 +71,9 @@ int main() {
 
     // iter_3 = iter_4;
     iter_4 = iter_3;
+
+    *(iter_3 + 2);
+
 
     // if (iter_1 > iter_2) {
     //     std::cout << "   ";
