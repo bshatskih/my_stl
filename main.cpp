@@ -52,16 +52,29 @@ int main() {
 
 
     int* ptr;
-    std::vector<int>::iterator iter_1;
-    std::vector<int>::iterator iter_2; 
-    ++iter_1;
-    iter_1++;
-    --iter_1;
-    iter_1--;
+    std::vector<int>::iterator iter_1; 
 
-    if (iter_1 > iter_2) {
-        std::cout << "   ";
-    }
+    std::vector<int>::const_iterator iter_2; 
+
+    // iter_1 = iter_2;
+    iter_2 = iter_1;
+
+
+
+
+
+
+
+    vector<int>::iterator iter_3; 
+
+    vector<int>::const_iterator iter_4(iter_3); 
+
+    // iter_3 = iter_4;
+    iter_4 = iter_3;
+
+    // if (iter_1 > iter_2) {
+    //     std::cout << "   ";
+    // }
 
 
 
