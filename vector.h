@@ -3,6 +3,7 @@
 #include <ranges>
 #include <cstdint>
 #include "iterator.h"
+#include "reverse_iterator.h"
 
 
 template<typename T>
@@ -15,48 +16,72 @@ class vector {
 
     using iterator = base_iterator<false, T>;
     using const_iterator = base_iterator<true, T>;
+    using reverse_iterator = reverse_iterator<iterator>;
+    using const_reverse_iterator = reverse_iterator<const_iterator>;
 
 
-    iterator begin() {
+
+    constexpr iterator begin() noexcept {
         return iterator(arr_);
     }
 
-    iterator end() {
+    constexpr iterator end() noexcept {
         return iterator(arr_ + sz_);
     }
 
+    constexpr reverse_iterator rbegin() noexcept {
+        return reverse_iterator(end());
+    }
 
-    const_iterator begin() const {
+    constexpr reverse_iterator rend() noexcept {
+        return reverse_iterator(begin());
+    }
+
+    constexpr const_iterator begin() const noexcept {
         return const_iterator(arr_);
     }
 
-    const_iterator end() const {
+    constexpr const_iterator end() const noexcept {
         return const_iterator(arr_ + sz_);
     }
 
+    constexpr const_reverse_iterator rbegin() const noexcept {
+        return const_reverse_iterator(end());
+    }
 
-    const_iterator cbegin() const {
+    constexpr const_reverse_iterator rend() const noexcept {
+        return const_reverse_iterator(begin());
+    }
+
+
+    constexpr const_iterator cbegin() const noexcept {
         return const_iterator(arr_);
     }
 
-    const_iterator cend() const {
+    constexpr const_iterator cend() const noexcept {
         return const_iterator(arr_ + sz_);
     }
 
-    
+    constexpr const_reverse_iterator crbegin() const noexcept {
+        return const_reverse_iterator(end());
+    }
+
+    constexpr const_reverse_iterator crend() const noexcept {
+        return const_reverse_iterator(begin());
+    }
 
 
     vector() : sz_(0), cap_(0), arr_(nullptr) {}
 
-    [[nodiscard]] size_t size() const noexcept {
+    [[nodiscard]] constexpr size_t size() const noexcept {
         return sz_;
     }
     
-    [[nodiscard]] size_t capacity() const noexcept {
+    [[nodiscard]] constexpr size_t capacity() const noexcept {
         return cap_;
     }
     
-    [[nodiscard]] bool empty() const noexcept {
+    [[nodiscard]] constexpr bool empty() const noexcept {
         return sz_ == 0;
     }
     
