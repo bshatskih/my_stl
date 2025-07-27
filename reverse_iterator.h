@@ -29,7 +29,7 @@ class reverse_iterator {
     }
 
     constexpr reverse_iterator() noexcept = default;
-    explicit constexpr reverse_iterator(Iter other) = default;
+    explicit constexpr reverse_iterator(Iter x) noexcept : current(x) {}
     explicit reverse_iterator(const reverse_iterator& other) = default;
 
     template <typename U>

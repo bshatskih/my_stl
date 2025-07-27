@@ -14,10 +14,15 @@ class vector {
 
     public:
 
-    using iterator = base_iterator<false, T>;
-    using const_iterator = base_iterator<true, T>;
-    using reverse_iterator = reverse_iterator<iterator>;
-    using const_reverse_iterator = reverse_iterator<const_iterator>;
+    using value_type = T;
+    using allocator_type = std::allocator<T>;
+    using size_type = std::size_t;
+    using reference = T&;
+    // usint pointer = T*; ???
+    using iterator = ::base_iterator<false, T>;
+    using const_iterator = ::base_iterator<true, T>;
+    using reverse_iterator = ::reverse_iterator<iterator>;
+    using const_reverse_iterator = ::reverse_iterator<const_iterator>;
 
 
 
