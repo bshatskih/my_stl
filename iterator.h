@@ -6,6 +6,11 @@
     Поскольку реализация const_iterator почти полностью повторяет обычный iterator, за исключением того, что мы пишем const T* ptr и в 
     методах operator*() и operator->() возвращать const T& и const T* соответственно, то неоптимально было бы заниматься копипасном, 
     решением будет использование шаблонного класса base_iterator
+
+
+
+    Важно! Если у вас есть собственный итератор, вы можете определить в нём вложенные типы (iterator_category, value_type, difference_type,
+    pointer, reference), и тогда iterator_traits автоматически их подхватит.
 */
 
 
@@ -53,8 +58,8 @@ class base_iterator {
 
     template <bool B = IsConst>
     requires (B)
-    base_iterator(const base_iterator<false, T>& other) : ptr(other.ptr) {}
-    base_iterator(const base_iterator&) = default;
+    explicit base_iterator(const base_iterator<false, T>& other) : ptr(other.ptr) {}
+    explicit base_iterator(const base_iterator&) = default;
 
 
     template <bool B = IsConst>
@@ -102,33 +107,46 @@ class base_iterator {
         return copy;
     }
 
-
-    bool operator==(const base_iterator& other) const noexcept {
+    template <typename OtherIter>
+    requires(std::is_same_v<value_type, typename std::iterator_traits<OtherIter>::value_type>)
+    bool operator==(const OtherIter& other) const noexcept {
         return ptr == other.ptr;
     }
 
-    bool operator!=(const base_iterator& other) const noexcept {
+    template <typename OtherIter>
+    requires(std::is_same_v<value_type, typename std::iterator_traits<OtherIter>::value_type>)
+    bool operator!=(const OtherIter& other) const noexcept {
         return ptr != other.ptr;
     }
 
-    bool operator>(const base_iterator& other) const noexcept {
+    template <typename OtherIter>
+    requires(std::is_same_v<value_type, typename std::iterator_traits<OtherIter>::value_type>)
+    bool operator>(const OtherIter& other) const noexcept {
         return ptr > other.ptr;
     }
 
-    bool operator>=(const base_iterator& other) const noexcept {
+    template <typename OtherIter>
+    requires(std::is_same_v<value_type, typename std::iterator_traits<OtherIter>::value_type>)
+    bool operator>=(const OtherIter& other) const noexcept {
         return ptr >= other.ptr;
     }
 
-    bool operator<(const base_iterator& other) const noexcept {
+    template <typename OtherIter>
+    requires(std::is_same_v<value_type, typename std::iterator_traits<OtherIter>::value_type>)
+    bool operator<(const OtherIter& other) const noexcept {
         return ptr < other.ptr;
     }
 
-    bool operator<=(const base_iterator& other) const noexcept {
+    template <typename OtherIter>
+    requires(std::is_same_v<value_type, typename std::iterator_traits<OtherIter>::value_type>)
+    bool operator<=(const OtherIter& other) const noexcept {
         return ptr <= other.ptr;
     }
 
 //  since c++20
-//  bool operator<=>(const base_iterator& other) const noexcept = default;
+//  template <typename OtherIter>
+//  requires(std::is_same_v<value_type, typename std::iterator_traits<OtherIter>::value_type>)
+//  bool operator<=>(const OtherIter& other) const noexcept = default;
 
 
     base_iterator& operator+=(difference_type n) noexcept {

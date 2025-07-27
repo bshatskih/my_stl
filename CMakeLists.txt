@@ -3,4 +3,4 @@ project(Vector)
 set(CMAKE_CXX_STANDARD 20)    
 
 
-add_executable(Vector main.cpp vector.h iterator.h)
+add_executable(Vector main.cpp vector.h iterator.h reverse_iterator.h)

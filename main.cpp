@@ -16,9 +16,17 @@ struct S
 
 int main() {
     std::vector<int> a(5);
+    std::vector<int> b(10);
     a.push_back(111);
 
-    std::cout << a.begin()[5] << '\n';
+    std::vector<int>::const_iterator itata = a.begin();
+    std::vector<int>::iterator itatq = b.begin();
+
+    if (itata > itatq) {
+        std::cout << 1 << "dwjcn";
+    }
+
+
 
     // std::cout << "a_size  " << *reinterpret_cast<int**>(static_cast<std::byte*>(static_cast<void*>(&a)) + sizeof(ptrdiff_t)) 
     //                             - *reinterpret_cast<int**>(&a) << '\n';
@@ -44,11 +52,14 @@ int main() {
 
     
 
-
+    vector<double> d;
 
     vector<int>::iterator it = test.begin();
-    vector<int>::iterator it_1 = it.operator+(7);
-    // std::cout << *(6);
+    vector<double>::const_iterator it_1 = d.cbegin();
+    
+    // if (it == it_1) {
+    //     std::cout << 1;
+    // }
 
 
     int* ptr;
