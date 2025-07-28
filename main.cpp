@@ -22,9 +22,6 @@ int main() {
     std::vector<int>::const_iterator itata = a.begin();
     std::vector<int>::iterator itatq = b.begin();
 
-    if (itata > itatq) {
-        std::cout << 1 << "dwjcn";
-    }
 
 
 
@@ -40,58 +37,16 @@ int main() {
 ;
     vector<int> test;
 
-    test.push_back(1);
-    test.push_back(3);
-    test.push_back(-2);
-    test.push_back(8);
-    test.push_back(2);
-    test.push_back(-12);
-    test.push_back(17);
-    test.push_back(5);
+    // test.push_back(1);
+    // test.push_back(3);
+    // test.push_back(-2);
+    // test.push_back(8);
+    // test.push_back(2);
+    // test.push_back(-12);
+    // test.push_back(17);
+    // test.push_back(5);
 
-
-    
-
-    vector<double> d;
-
-    vector<int>::iterator it = test.begin();
-    vector<double>::const_iterator it_1 = d.cbegin();
-    
-    // if (it == it_1) {
-    //     std::cout << 1;
-    // }
-
-
-    int* ptr;
-    std::vector<int>::iterator iter_1; 
-
-    std::vector<int>::const_iterator iter_2; 
-
-    // iter_1 = iter_2;
-    iter_2 = iter_1;
-
-
-
-
-
-
-
-    vector<int>::iterator iter_3; 
-
-    vector<int>::const_iterator iter_4(iter_3); 
-
-    // iter_3 = iter_4;
-    iter_4 = iter_3;
-
-    *(iter_3 + 2);
-
-
-    // if (iter_1 > iter_2) {
-    //     std::cout << "   ";
-    // }
-
-
-
+    std::cout << sizeof(test);
 
     return 0;
 }

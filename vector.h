@@ -3,11 +3,12 @@
 #include <ranges>
 #include <cstdint>
 #include "iterator.h"
+#include "allocator.h"
 #include "reverse_iterator.h"
 
 
-template<typename T>
-class vector {
+template<typename T, typename Alloc = std::allocator<T>>
+class vector : protected Alloc {
     size_t sz_;
     size_t cap_;
     T* arr_;
@@ -58,7 +59,6 @@ class vector {
         return const_reverse_iterator(begin());
     }
 
-
     constexpr const_iterator cbegin() const noexcept {
         return const_iterator(arr_);
     }
@@ -90,56 +90,97 @@ class vector {
         return sz_ == 0;
     }
     
+
     void reserve(size_t new_cap) {
         if (new_cap <= cap_) {
             return;
         }
-        /*
+
+        T* new_arr = Alloc::allocate(new_cap);
+
+        size_t i = 0;
+        try {
+            for (; i < sz_; ++i) {
+                Alloc::construct(new_arr + i, arr_[i]);
+            }
+        } catch (...) {
+            for (size_t j = 0; j < i; ++j) {
+                Alloc::destroy(new_arr + j  );
+            }
+            Alloc::deallocate(new_arr, new_cap);
+            throw;
+        }
+
+        for (size_t i = 0; i < sz_; ++i) {
+            Alloc::destroy(arr_ + i);
+        }
+        Alloc::deallocate(arr_, cap_);
+
+        arr_ = new_arr;
+        cap_ = new_cap;
+        return;
+    }
+
+    /*
+    
+        void reserve(size_t new_cap) {
+        if (new_cap <= cap_) {
+            return;
+        }
         Выделяем помять под новый массив, возникает желание написать так - T* new_arr = new T[new_cap], однако это непреемлемый
         вариант по нескольким причинам:
         1) Противоречит самой цели метода - reserve должен выделить достаточное кол-во памяти, чтобы хранить в векторе
         new_cap объектов типа T, то не создавать эти объекты
         2) У типа T может не быть конструктора по умолчанию
         Поэтому мы будем выделять достаточное кол-во памяти для хнанения new_cap штук объектов типа T, при этом не создавая сами объекты
-        */
-        T* new_arr = reinterpret_cast<T*>(new std::byte[new_cap * sizeof(T)]);
 
-        /*
+        // T* new_arr = reinterpret_cast<T*>(new std::byte[new_cap * sizeof(T)]);
+        T* new_arr = alloc_.allocate(new_cap);
+
         Поскольку методы контейнеров должны давать строгую гарантию безопасности отностительно исключений, нужно предусмотреть
         случай, когда конструктор копирования типа T бросит исключение, и обработать данную ситуацию
-        */
+
         size_t i = 0;
         try {
-            /*
+
             Копируем элементы в новый массив, и вновь возникает желание написать что-то привычное в духе new_arr[i] = arr_[i],
             однако этот вариант неправильный, поскольку мы вызываем оператор присваивания от двух объектов типа T, но первый из них в 
             реальности не сконструирован, т.е. под new_arr[i] не лежит никакого объекта
             Воспользуемся placement new, чтобы по данному адресу создать объект от заданнх параметров
-            */
+
             for (; i < sz_; ++i) {
-                new(new_arr + i) T(arr_[i]);
+                // new(new_arr + i) T(arr_[i]);
+                alloc_.construct(new_arr + i, arr_[i]);
             }
         } catch (...) {
             for (size_t j = 0; j < i; ++j) {
-                (new_arr + i)->~T();
+                // (new_arr + j)->~T();
+                alloc_.destroy(new_arr + j  );
             }
-            delete[] reinterpret_cast<std::byte*>(new_arr);
+            // delete[] reinterpret_cast<std::byte*>(new_arr);
+            alloc_.deallocate(new_arr, new_cap);
             throw;
         }
 
-        /*
+
         Тут кроется ключевой момент сильной гарантии безопасности - если мы не смогли переложить все елементы из arr_ в new_arr
         размера new_cap, то исходный arr_ останется в неизменном состоянии
-        */
+
 
         for (size_t i = 0; i < sz_; ++i) {
-            (arr_ + 1)->~T();
+            // (arr_ + i)->~T();
+            alloc_.destroy(arr_ + i);
         }
-        delete[] reinterpret_cast<std::byte*>(arr_);
+        // delete[] reinterpret_cast<std::byte*>(arr_);
+        alloc_.deallocate(arr_, cap_);
         arr_ = new_arr;
         cap_ = new_cap;
         return;
     }
+    
+    
+    */
+    
     
     void resize(size_t n, const T& value = T()) {
         if (n < sz_) {
