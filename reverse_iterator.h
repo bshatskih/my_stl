@@ -45,7 +45,7 @@ class reverse_iterator {
         return *this;
     }
 
-    //
+    
     constexpr reference operator*() const noexcept(noexcept(std::prev(current))){
         Iter tmp = current;  
         --tmp;                  
@@ -64,8 +64,8 @@ class reverse_iterator {
     }
 
 
-    constexpr reference operator[](difference_type n) const noexcept(noexcept(*(current - (n + 1)))) {
-        return *(current + (n - 1));
+    constexpr reference operator[](difference_type n) const noexcept(noexcept(*(*this + n))) {
+        return *(*this + n);
     }
 
     constexpr reverse_iterator& operator++() noexcept(noexcept(--current)) {

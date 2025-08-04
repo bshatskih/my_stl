@@ -26,19 +26,20 @@ struct allocator {
 
     void deallocate(T* ptr, size_t) {
         ::operator delete(ptr);
-        return;
     }
 
     template <typename U, typename ... Args>
-    void construct(U* ptr, const Args& ... args) {
-        new(ptr) U(args...);
-        return;
+    void construct(U* ptr, Args&& ... args) {
+        if constexpr (!std::is_trivially_constructible_v<U, Args...>) {
+            new(ptr) U(std::forward<Args>(args) ...);
+        }
     }
 
     template <typename U>
     void destroy(U* ptr) {
-        ptr->~U();
-        return;
+        if constexpr (!std::is_trivially_destructible_v<U>) {
+            ptr->~U();
+        }
     }
 
     template <typename U>
