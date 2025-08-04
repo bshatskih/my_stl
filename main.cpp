@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <list>
 #include "vector.h"
 
 
@@ -16,6 +17,7 @@ struct S
 
 int main() {
     std::vector<int> a(5);
+
     std::vector<int> b(10);
     a.push_back(111);
 
@@ -46,7 +48,17 @@ int main() {
     // test.push_back(17);
     // test.push_back(5);
 
-    std::cout << sizeof(test);
+    // std::cout << sizeof(test);
 
+
+    std::vector<int>::iterator v_it(a.begin());
+
+    std::list<int> bbb{1, 2, 4};
+    std::vector<int>::iterator l_it(b.begin());
+
+    int* ptr;
+    if (v_it > l_it) {
+        std::cout << true;
+    };
     return 0;
 }

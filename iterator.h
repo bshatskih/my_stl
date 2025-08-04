@@ -57,13 +57,13 @@ class base_iterator {
     base_iterator(T* ptr_) : ptr(ptr_) {}
 
     template <bool B = IsConst>
-    requires (B)
+    requires(B)
     explicit base_iterator(const base_iterator<false, T>& other) : ptr(other.ptr) {}
     explicit base_iterator(const base_iterator&) = default;
 
 
     template <bool B = IsConst>
-    requires (B)
+    requires(B)
     base_iterator& operator=(const base_iterator<false, T>& other) {
         ptr = other.ptr;
         return *this;
@@ -71,16 +71,16 @@ class base_iterator {
     base_iterator& operator=(const base_iterator&) = default;
 
 
-    reference operator*() const noexcept { 
+    [[nodiscard]] reference operator*() const noexcept { 
         return *ptr; 
     }
 
-    reference operator[](difference_type n) const noexcept {
+    [[nodiscard]] reference operator[](difference_type n) const noexcept {
         return *(ptr + n);
     }
 
     // Компилятор сам допишет ещё одну стрелочку к возвращаемому объекту
-    pointer operator->() const noexcept {
+    [[nodiscard]] pointer operator->() const noexcept {
         return ptr;
     }
 
@@ -107,39 +107,33 @@ class base_iterator {
         return copy;
     }
 
-    template <typename OtherIter>
-    requires(std::is_same_v<value_type, typename std::iterator_traits<OtherIter>::value_type>)
-    bool operator==(const OtherIter& other) const noexcept {
+    template <bool B>
+    bool operator==(const base_iterator<B, T>& other) const noexcept {
         return ptr == other.ptr;
     }
 
-    template <typename OtherIter>
-    requires(std::is_same_v<value_type, typename std::iterator_traits<OtherIter>::value_type>)
-    bool operator!=(const OtherIter& other) const noexcept {
+    template <bool B>
+    bool operator!=(const base_iterator<B, T>& other) const noexcept {
         return ptr != other.ptr;
     }
 
-    template <typename OtherIter>
-    requires(std::is_same_v<value_type, typename std::iterator_traits<OtherIter>::value_type>)
-    bool operator>(const OtherIter& other) const noexcept {
+    template <bool B>
+    bool operator>(const base_iterator<B, T>& other) const noexcept {
         return ptr > other.ptr;
     }
 
-    template <typename OtherIter>
-    requires(std::is_same_v<value_type, typename std::iterator_traits<OtherIter>::value_type>)
-    bool operator>=(const OtherIter& other) const noexcept {
+    template <bool B>
+    bool operator>=(const base_iterator<B, T>& other) const noexcept {
         return ptr >= other.ptr;
     }
 
-    template <typename OtherIter>
-    requires(std::is_same_v<value_type, typename std::iterator_traits<OtherIter>::value_type>)
-    bool operator<(const OtherIter& other) const noexcept {
+    template <bool B>
+    bool operator<(const base_iterator<B, T>& other) const noexcept {
         return ptr < other.ptr;
     }
 
-    template <typename OtherIter>
-    requires(std::is_same_v<value_type, typename std::iterator_traits<OtherIter>::value_type>)
-    bool operator<=(const OtherIter& other) const noexcept {
+    template <bool B>
+    bool operator<=(const base_iterator<B, T>& other) const noexcept {
         return ptr <= other.ptr;
     }
 

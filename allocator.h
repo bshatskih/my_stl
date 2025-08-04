@@ -3,7 +3,6 @@
 
 
 
-
 template <typename T>
 struct allocator {
 
