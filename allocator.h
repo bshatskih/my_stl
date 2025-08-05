@@ -16,7 +16,7 @@ struct allocator {
 
     allocator() = default;
 
-    T* allocate(size_t count) {
+    [[nodiscard]] T* allocate(size_t count) {
         if (count == 0) {
             return nullptr;
         }
@@ -30,16 +30,12 @@ struct allocator {
 
     template <typename U, typename ... Args>
     void construct(U* ptr, Args&& ... args) {
-        if constexpr (!std::is_trivially_constructible_v<U, Args...>) {
-            new(ptr) U(std::forward<Args>(args) ...);
-        }
+        new(ptr) U(std::forward<Args>(args) ...);
     }
 
     template <typename U>
     void destroy(U* ptr) {
-        if constexpr (!std::is_trivially_destructible_v<U>) {
-            ptr->~U();
-        }
+        ptr->~U();
     }
 
     template <typename U>
