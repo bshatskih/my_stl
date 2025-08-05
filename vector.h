@@ -30,49 +30,49 @@ class vector {
 
 
     // Element access
-    reference at(size_t n) {
+    constexpr reference at(size_t n) {
         if (n >= size()) {
             throw std::out_of_range();
         }
         return arr_[n];
     }
 
-    const_reference at(size_t n) const {
+    constexpr const_reference at(size_t n) const {
         if (n >= size()) {
             throw std::out_of_range();
         }
         return arr_[n];
     }
 
-    reference operator[](size_t n) {
+    constexpr reference operator[](size_t n) {
         return arr_[n];
     }
 
-    const_reference operator[](size_t n) const{
+    constexpr const_reference operator[](size_t n) const{
         return arr_[n];
     }
 
-    reference front() {
+    constexpr reference front() {
         return arr_[0];
     }
 
-    const_reference front() const {
+    constexpr const_reference front() const {
         return arr_[0];
     }
 
-    reference back() {
+    constexpr reference back() {
         return arr_[sz_ - 1];
     }
 
-    const_reference back() const {
+    constexpr const_reference back() const {
         return arr_[sz_ - 1];
     }
 
-    pointer data() noexcept {
+    constexpr pointer data() noexcept {
         return sz_ == 0 ? nullptr : arr_;;
     }
 
-    const_pointer data() const noexcept {
+    constexpr const_pointer data() const noexcept {
         return sz_ == 0 ? nullptr : arr_;;
     }
 
@@ -140,7 +140,7 @@ class vector {
         return sz_ == 0;
     }
 
-    void reserve(size_t new_cap) {
+    constexpr void reserve(size_t new_cap) {
         if (new_cap <= cap_) {
             return;
         }
@@ -173,14 +173,14 @@ class vector {
         cap_ = new_cap;
     }
     
-    void shrink_to_fit() {
+    constexpr void shrink_to_fit() {
         if (sz_ == 0) {
             std::allocator_traits<Alloc>::deallocate(alloc_, arr_, cap_);
             arr_ = nullptr;
             cap_ = 0;
             return;
         }
-        
+
         if (sz_ == cap_) {
             return;
         }
@@ -209,21 +209,413 @@ class vector {
         cap_ = sz_;
     }
   
-    size_t max_size() const noexcept {
+    constexpr size_t max_size() const noexcept {
         return std::allocator_traits<Alloc>::max_size(alloc_);
     }
 
-    vector() : sz_(0), cap_(0), arr_(nullptr) {}
+
+    // Modifiers
+    constexpr void clear() noexcept {
+        for (size_t i = 0; i < sz_; ++i) {
+            std::allocator_traits<Alloc>::destroy(alloc_, arr_ + i);
+        }
+        sz_ = 0;
+    }
+
+    constexpr iterator insert(const_iterator pos, const T& value) {
+        size_t index = pos - cbegin();
+
+        std::optional<value_type> copy_val;
+        const_pointer val_ptr = std::addressof(value);
+        bool value_inside_vector = arr_ && (std::less<const T*>()(val_ptr, arr_ + sz_) && std::greater_equal<const T*>()(val_ptr, arr_));
+        if (value_inside_vector) {
+            copy_val.emplace(value);
+            val_ptr = std::addressof(*copy_val);
+        }
+
+        if (sz_ == cap_) {
+            size_t new_cap = cap_ != 0 ? cap_ * 2 : 1;
+            T* new_arr = std::allocator_traits<Alloc>::allocate(alloc_, new_cap);
+
+            size_t i = 0;
+            try {
+                for (; i < index; ++i) {
+                    std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, std::move_if_noexcept(arr_[i]));
+                }
+                std::allocator_traits<Alloc>::construct(alloc_, new_arr + index, *val_ptr);
+                ++i;
+                for (; i <= sz_; ++i) {
+                    std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, std::move_if_noexcept(arr_[i - 1]));
+                }
+            } catch (...)   {
+                 for (size_t j = 0; j < i; ++j) {
+                    std::allocator_traits<Alloc>::destroy(alloc_, new_arr + j);
+                }
+                std::allocator_traits<Alloc>::deallocate(alloc_, new_arr, new_cap);
+                throw;
+            }
+
+            for (size_t j = 0; j < sz_; ++j) {
+                std::allocator_traits<Alloc>::destroy(alloc_, arr_ + j);
+            }
+            std::allocator_traits<Alloc>::deallocate(alloc_, arr_, cap_);
+
+            arr_ = new_arr;
+            cap_ = new_cap;
+        } else {
+            for (size_t i = sz_; i > index; --i) {
+                std::allocator_traits<Alloc>::construct(alloc_, arr_ + i, std::move_if_noexcept(arr_[i - 1]));
+                std::allocator_traits<Alloc>::destroy(alloc_, arr_ + i - 1);
+            }
+            std::allocator_traits<Alloc>::construct(alloc_, arr_ + index, *val_ptr);
+        }
+        ++sz_;
+        return iterator(arr_ + index);
+    }
+
+    constexpr iterator insert(const_iterator pos, T&& value) {
+        size_t index = pos - cbegin();
+        T tmp = std::move(value);
+        if (sz_ == cap_) {
+            size_t new_cap = cap_ != 0 ? cap_ * 2 : 1;
+            T* new_arr = std::allocator_traits<Alloc>::allocate(alloc_, new_cap);
+
+            size_t i = 0;
+            try {
+                for (; i < index; ++i) {
+                    std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, std::move_if_noexcept(arr_[i]));
+                }
+                std::allocator_traits<Alloc>::construct(alloc_, new_arr + index, std::move(tmp));
+                ++i;
+                for (; i <= sz_; ++i) {
+                    std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, std::move_if_noexcept(arr_[i - 1]));
+                }
+            } catch (...)   {
+                 for (size_t j = 0; j < i; ++j) {
+                    std::allocator_traits<Alloc>::destroy(alloc_, new_arr + j);
+                }
+                std::allocator_traits<Alloc>::deallocate(alloc_, new_arr, new_cap);
+                throw;
+            }
+
+            for (size_t j = 0; j < sz_; ++j) {
+                std::allocator_traits<Alloc>::destroy(alloc_, arr_ + j);
+            }
+            std::allocator_traits<Alloc>::deallocate(alloc_, arr_, cap_);
+
+            arr_ = new_arr;
+            cap_ = new_cap;
+        } else {
+            for (size_t i = sz_; i > index; --i) {
+                std::allocator_traits<Alloc>::construct(alloc_, arr_ + i, std::move_if_noexcept(arr_[i - 1]));
+                std::allocator_traits<Alloc>::destroy(alloc_, arr_ + i - 1);
+            }
+            std::allocator_traits<Alloc>::construct(alloc_, arr_ + index, std::move(tmp));
+        }
+        ++sz_;
+        return iterator(arr_ + index);
+    }
+
+    constexpr iterator insert(const_iterator pos, size_type count, const T& value) {
+        size_t index = pos - cbegin();
+
+        std::optional<value_type> copy_val;
+        const_pointer val_ptr = std::addressof(value);
+        bool value_inside_vector = arr_ && (std::less<const T*>()(val_ptr, arr_ + sz_) && std::greater_equal<const T*>()(val_ptr, arr_));
+        if (value_inside_vector) {
+            copy_val.emplace(value);
+            val_ptr = std::addressof(*copy_val);
+        }
 
 
-    
-    
-    void resize(size_t n, const T& value = T()) {
+        if (sz_ + count > cap_) {
+            size_t new_cap = cap_ != 0 ? cap_ * 2 : 1;
+            if (sz_ + count > new_cap) {
+                new_cap = sz_ + count;
+            }
+            T* new_arr = std::allocator_traits<Alloc>::allocate(alloc_, new_cap);
+
+            size_t i = 0;
+            try {
+                for (; i < index; ++i) {
+                    std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, std::move_if_noexcept(arr_[i]));
+                }
+
+                for (; i < index + count; ++i) {
+                    std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, *val_ptr);
+                }
+                
+                for (; i < sz_ + count; ++i) {
+                    std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, std::move_if_noexcept(arr_[i - count]));
+                }
+            } catch (...)   {
+                 for (size_t j = 0; j < i; ++j) {
+                    std::allocator_traits<Alloc>::destroy(alloc_, new_arr + j);
+                }
+                std::allocator_traits<Alloc>::deallocate(alloc_, new_arr, new_cap);
+                throw;
+            }
+
+            for (size_t j = 0; j < sz_; ++j) {
+                std::allocator_traits<Alloc>::destroy(alloc_, arr_ + j);
+            }
+            std::allocator_traits<Alloc>::deallocate(alloc_, arr_, cap_);
+
+            arr_ = new_arr;
+            cap_ = new_cap;
+        } else {
+            for (size_t i = sz_; i-- > index;) {
+                std::allocator_traits<Alloc>::construct(alloc_, arr_ + i + count, std::move_if_noexcept(arr_[i]));
+                std::allocator_traits<Alloc>::destroy(alloc_, arr_ + i);
+            }
+
+            for (size_t i = index; i < index + count; ++i) {
+                std::allocator_traits<Alloc>::construct(alloc_, arr_ + i, *val_ptr);
+            }
+        }
+        sz_ += count;
+        return iterator(arr_ + index);
+    }
+
+    template <typename InputIt>
+    requires (!std::is_integral_v<InputIt>)
+    constexpr iterator insert(const_iterator pos, InputIt first, InputIt last) {
+        size_t index = pos - cbegin();
+
+        if (first == last) {
+            return iterator(arr_ + index);
+        }
+
+        if constexpr (std::derived_from<typename std::iterator_traits<InputIt>::iterator_category, std::forward_iterator_tag>) {
+            size_t count = std::distance(first, last);
+
+            std::optional<vector<value_type>> copy_range;
+            const_pointer val_ptr = std::addressof(*first);
+            bool value_inside_vector = arr_ && (std::less<const T*>()(val_ptr, arr_ + sz_) && std::greater_equal<const T*>()(val_ptr, arr_));
+            if (value_inside_vector) {
+                copy_range.emplace();
+                for (InputIt it = first; it != last; ++it) {
+                    copy_range->push_back(*it);
+                }
+                val_ptr = copy_range->data();
+            }
+
+            if (sz_ + count > cap_) {
+                size_t new_cap = cap_ != 0 ? cap_ * 2 : 1;
+                if (sz_ + count > new_cap) {
+                    new_cap = sz_ + count;
+                }
+                T* new_arr = std::allocator_traits<Alloc>::allocate(alloc_, new_cap);
+
+                size_t i = 0;
+                try {
+                    for (; i < index; ++i) {
+                        std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, std::move_if_noexcept(arr_[i]));
+                    }
+
+                    for (; i < index + count; ++i) {
+                        std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, *val_ptr);
+                        ++val_ptr;
+                    }
+                    
+                    for (; i < sz_ + count; ++i) {
+                        std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, std::move_if_noexcept(arr_[i - count]));
+                    }
+                } catch (...)   {
+                    for (size_t j = 0; j < i; ++j) {
+                        std::allocator_traits<Alloc>::destroy(alloc_, new_arr + j);
+                    }
+                    std::allocator_traits<Alloc>::deallocate(alloc_, new_arr, new_cap);
+                    throw;
+                }
+
+                for (size_t j = 0; j < sz_; ++j) {
+                    std::allocator_traits<Alloc>::destroy(alloc_, arr_ + j);
+                }
+                std::allocator_traits<Alloc>::deallocate(alloc_, arr_, cap_);
+
+                arr_ = new_arr;
+                cap_ = new_cap;
+            } else {
+                for (size_t i = sz_; i-- > index;) {
+                    std::allocator_traits<Alloc>::construct(alloc_, arr_ + i + count, std::move_if_noexcept(arr_[i]));
+                    std::allocator_traits<Alloc>::destroy(alloc_, arr_ + i);
+                }
+
+                for (size_t i = index; i < index + count; ++i) {
+                    std::allocator_traits<Alloc>::construct(alloc_, arr_ + i, *val_ptr);
+                    ++val_ptr;
+                }
+            }
+            sz_ += count;
+        } else {
+            size_t inserted_count = 0;
+            try {
+                while (first != last) {
+                    insert(begin() + index + inserted_count, *first);
+                    ++inserted_count;
+                    ++first;
+                }
+            } catch (...) {
+                erase(begin() + index, begin() + index + inserted_count);
+                throw;
+            }
+        }
+        return iterator(arr_ + index);
+    }
+
+    constexpr iterator insert(const_iterator pos, std::initializer_list<T> ilist) {
+        size_t index = pos - cbegin();
+        size_t count = ilist.size();
+        typename std::initializer_list<T>::iterator it = ilist.begin();
+        if (sz_ + count > cap_) {
+            size_t new_cap = cap_ != 0 ? cap_ * 2 : 1;
+            if (sz_ + count > new_cap) {
+                new_cap = sz_ + count;
+            }
+            T* new_arr = std::allocator_traits<Alloc>::allocate(alloc_, new_cap);
+
+            size_t i = 0;
+            try {
+                for (; i < index; ++i) {
+                    std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, std::move_if_noexcept(arr_[i]));
+                }
+
+                for (; i < index + count; ++i) {
+                    std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, *it);
+                    ++it;
+                }
+                
+                for (; i < sz_ + count; ++i) {
+                    std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, std::move_if_noexcept(arr_[i - count]));
+                }
+            } catch (...)   {
+                 for (size_t j = 0; j < i; ++j) {
+                    std::allocator_traits<Alloc>::destroy(alloc_, new_arr + j);
+                }
+                std::allocator_traits<Alloc>::deallocate(alloc_, new_arr, new_cap);
+                throw;
+            }
+
+            for (size_t j = 0; j < sz_; ++j) {
+                std::allocator_traits<Alloc>::destroy(alloc_, arr_ + j);
+            }
+            std::allocator_traits<Alloc>::deallocate(alloc_, arr_, cap_);
+
+            arr_ = new_arr;
+            cap_ = new_cap;
+        } else {
+            for (size_t i = sz_; i-- > index;) {
+                std::allocator_traits<Alloc>::construct(alloc_, arr_ + i + count, std::move_if_noexcept(arr_[i]));
+                std::allocator_traits<Alloc>::destroy(alloc_, arr_ + i);
+            }
+
+            for (size_t i = index; i < index + count; ++i) {
+                std::allocator_traits<Alloc>::construct(alloc_, arr_ + i, *it);
+                ++it;
+            }
+        }
+        sz_ += count;
+        return iterator(arr_ + index);
+    }
+
+    constexpr void push_back(const T& value) {
+        emplace_back(value);
+    }
+
+    constexpr void push_back(T&& value) {
+        emplace_back(std::move(value));
+    }
+
+    template <typename ... Args>
+    reference emplace_back(Args&& ... args) {
+        if (sz_ == cap_) {
+            size_t new_cap = cap_ != 0 ? cap_ * 2 : 1;
+
+            T*  new_arr = std::allocator_traits<Alloc>::allocate(alloc_, new_cap);
+            size_t i = 0;
+            try {
+                for (; i < sz_; ++i) {
+                    std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, std::move_if_noexcept(arr_[i]));
+                }
+                std::allocator_traits<Alloc>::construct(alloc_, new_arr + sz_, std::forward<Args>(args)...);
+                ++i;
+            } catch (...) {
+                for (size_t j = 0; j < i; ++j) {
+                    std::allocator_traits<Alloc>::destroy(alloc_, new_arr + j);
+                }
+                std::allocator_traits<Alloc>::deallocate(alloc_, new_arr, new_cap);
+                throw;
+            }
+
+            for (size_t k = 0; k < sz_; ++k) {
+                std::allocator_traits<Alloc>::destroy(alloc_, arr_ + k);
+            }
+            std::allocator_traits<Alloc>::deallocate(alloc_, arr_, cap_);
+            arr_ = new_arr;
+            cap_ = new_cap;
+        } else {
+            std::allocator_traits<Alloc>::construct(alloc_, arr_ + sz_, std::forward<Args>(args)...);
+        }
+        ++sz_;
+        return arr_[sz_ - 1];
+    }
+
+    template <class... Args>
+    constexpr iterator emplace(const_iterator pos, Args&&... args) {
+        size_t index = pos - cbegin();
+        if (sz_ == cap_) {
+            size_t new_cap = cap_ != 0 ? cap_ * 2 : 1;
+            T* new_arr = std::allocator_traits<Alloc>::allocate(alloc_, new_cap);
+
+            size_t i = 0;
+            try {
+                for (; i < index; ++i) {
+                    std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, std::move_if_noexcept(arr_[i]));
+                }
+                std::allocator_traits<Alloc>::construct(alloc_, new_arr + index, std::forward<Args>(args)...);
+                ++i;
+                for (; i <= sz_; ++i) {
+                    std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, std::move_if_noexcept(arr_[i - 1]));
+                }
+            } catch (...)   {
+                 for (size_t j = 0; j < i; ++j) {
+                    std::allocator_traits<Alloc>::destroy(alloc_, new_arr + j);
+                }
+                std::allocator_traits<Alloc>::deallocate(alloc_, new_arr, new_cap);
+                throw;
+            }
+
+            for (size_t j = 0; j < sz_; ++j) {
+                std::allocator_traits<Alloc>::destroy(alloc_, arr_ + j);
+            }
+            std::allocator_traits<Alloc>::deallocate(alloc_, arr_, cap_);
+
+            arr_ = new_arr;
+            cap_ = new_cap;
+        } else {
+            for (size_t i = sz_; i > index; --i) {
+                std::allocator_traits<Alloc>::construct(alloc_, arr_ + i, std::move_if_noexcept(arr_[i - 1]));
+                std::allocator_traits<Alloc>::destroy(alloc_, arr_ + i - 1);
+            }
+            std::allocator_traits<Alloc>::construct(alloc_, arr_ + index, std::forward<Args>(args)...);
+        }
+        ++sz_;
+        return iterator(arr_ + index);
+    }
+
+    constexpr void pop_back() {
+        --sz_;
+        std::allocator_traits<Alloc>::destroy(alloc_, arr_ + sz_);
+        return;
+    }
+
+    constexpr void resize(size_t n, const T& value = T()) {
         if (n < sz_) {
             for (size_t i = n; i < sz_; ++i) {
                 std::allocator_traits<Alloc>::destroy(alloc_, arr_ + i);
             }
-        } else if (n > sz_ && n <= cap_) {
+        } else if (n <= cap_) {
             size_t i = sz_;
             try {
                 for (; i < n; ++i) {
@@ -245,7 +637,7 @@ class vector {
             size_t i = 0;
             try {
                 for (; i < sz_; ++i) {
-                    std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, arr_[i]);
+                    std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, std::move_if_noexcept(arr_[i]));
                 }
 
                 for (; i < n; ++i) {
@@ -268,10 +660,88 @@ class vector {
             cap_ = new_cap;
         }
 
-        
         sz_ = n;
-        return;
     }
+
+    constexpr iterator erase(iterator pos) {
+        pointer p = std::to_address(pos);
+        pointer new_end = std::move(p + 1, arr_ + sz_, p);
+        std::allocator_traits<Alloc>::destroy(alloc_, new_end);
+        --sz_;
+        return iterator(p);
+    }
+
+    constexpr iterator erase(const_iterator pos) {
+        iterator mutable_pos = begin() + (pos - cbegin());
+        pointer p = std::to_address(mutable_pos);
+        pointer new_end = std::move(p + 1, arr_ + sz_, p);
+        std::allocator_traits<Alloc>::destroy(alloc_, new_end);
+        --sz_;
+        return mutable_pos;
+    }
+
+    constexpr iterator erase(iterator first, iterator last) {
+        if (first == last) {
+            return first;
+        }
+
+        pointer p_first = std::to_address(first);
+        pointer p_last = std::to_address(last);
+        size_type count = p_last - p_first;
+
+        pointer new_end = std::move(p_last, arr_ + sz_, p_first);
+
+        for (pointer p = new_end; p != arr_ + sz_; ++p) {
+            std::allocator_traits<Alloc>::destroy(alloc_, p);
+        }
+        sz_ -= count;
+        return first;
+    }
+
+    constexpr iterator erase(const_iterator first, const_iterator last) {
+        iterator mutable_first = begin() + (first - cbegin());
+        iterator mutable_last = end() + (last - cend());
+
+        if (first == last) {
+            return mutable_first;
+        }
+
+        pointer p_first = std::to_address(mutable_first);
+        pointer p_last = std::to_address(mutable_last);
+        size_type count = p_last - p_first;
+
+        pointer new_end = std::move(p_last, arr_ + sz_, p_first);
+
+        for (pointer p = new_end; p != arr_ + sz_; ++p) {
+            std::allocator_traits<Alloc>::destroy(alloc_, p);
+        }
+        sz_ -= count;
+        return mutable_first;
+    }
+
+    constexpr void swap(vector& other) noexcept(std::allocator_traits<Alloc>::propagate_on_container_swap::value || std::allocator_traits<Alloc>::is_always_equal::value) {
+        std::swap(arr_, other.arr_);        
+        std::swap(sz_, other.sz_);
+        std::swap(cap_, other.cap_);
+        
+        if constexpr (std::allocator_traits<Alloc>::propagate_on_container_swap::value) {
+            std::swap(alloc_, other.alloc_);
+        } else {
+            assert(alloc_ == other.alloc_ && "Swapping vectors with unequal allocators is undefined behavior");
+        }
+    }
+
+
+
+
+
+
+    vector() : sz_(0), cap_(0), arr_(nullptr) {}
+
+
+    
+    
+
     
     vector& operator=(const vector& other) {
         Alloc new_alloc = std::allocator_traits<Alloc>::propagate_on_container_copy_assignment::value ?
@@ -304,54 +774,5 @@ class vector {
         return *this;
     }
 
-    void push_back(const T& value) {
-        emplace_back(value);
-    }
-
-    void push_back(T&& value) {
-        emplace_back(std::move(value));
-    }
-
-    template <typename ... Args>
-    void emplace_back(Args&& ... args) {
-        if (sz_ == cap_) {
-            size_t new_cap = cap_ != 0 ? cap_ * 2 : 1;
-
-            T*  new_arr = std::allocator_traits<Alloc>::allocate(alloc_, new_cap);
-            size_t i = 0;
-            try {
-                for (; i < sz_; ++i) {
-                    std::allocator_traits<Alloc>::construct(alloc_, new_arr + i, std::move_if_noexcept(arr_[i]));
-                }
-                std::allocator_traits<Alloc>::construct(alloc_, new_arr + sz_, std::forward<Args>(args)...);
-            } catch (...) {
-                for (size_t j = 0; j < i; ++j) {
-                    std::allocator_traits<Alloc>::destroy(alloc_, new_arr + j);
-                }
-                std::allocator_traits<Alloc>::deallocate(alloc_, new_arr, new_cap);
-                throw;
-            }
-
-            for (size_t k = 0; k < sz_; ++k) {
-                std::allocator_traits<Alloc>::destroy(alloc_, arr_ + k);
-            }
-            std::allocator_traits<Alloc>::deallocate(alloc_, arr_, cap_);
-            arr_ = new_arr;
-            cap_ = new_cap;
-        } else {
-            std::allocator_traits<Alloc>::construct(alloc_, arr_ + sz_, std::forward<Args>(args)...);
-        }
-        ++sz_;
-    }
-
-    void pop_back() {
-        /*
-        Было бы славно добавить проверку вектора на наличия в нём элементов, но поскольку в stl это не реализовано я также не буду этого делать,
-        то есть pop_back, вызванная для пустого ветора приведёт к UB
-        */
-        --sz_;
-        std::allocator_traits<Alloc>::destroy(alloc_, arr_ + sz_);
-        return;
-    }
 
 };

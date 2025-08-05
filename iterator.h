@@ -54,21 +54,21 @@ class base_iterator {
     friend class base_iterator;
 
     constexpr base_iterator() noexcept : ptr(nullptr) {}
-    base_iterator(T* ptr_) : ptr(ptr_) {}
+    base_iterator(pointer ptr_) noexcept : ptr(ptr_) {}
 
     template <bool B = IsConst>
     requires(B)
-    explicit base_iterator(const base_iterator<false, T>& other) : ptr(other.ptr) {}
-    explicit base_iterator(const base_iterator&) = default;
+    base_iterator(const base_iterator<false, T>& other) noexcept : ptr(other.ptr) {}
+    base_iterator(const base_iterator&) noexcept = default;
 
 
     template <bool B = IsConst>
     requires(B)
-    base_iterator& operator=(const base_iterator<false, T>& other) {
+    base_iterator& operator=(const base_iterator<false, T>& other) noexcept {
         ptr = other.ptr;
         return *this;
     }
-    base_iterator& operator=(const base_iterator&) = default;
+    base_iterator& operator=(const base_iterator&) noexcept = default;
 
 
     [[nodiscard]] reference operator*() const noexcept { 
