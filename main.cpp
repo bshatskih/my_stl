@@ -3,6 +3,7 @@
 #include <list>
 #include <algorithm>
 #include "vector.h"
+#include "smart_pointers/unique_ptr.h"
 
 
 
