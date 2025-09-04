@@ -76,9 +76,9 @@ public:
 
     template <typename U, typename E>
     requires std::convertible_to<U*, T*> && std::constructible_from<Deleter, E&&>
-    constexpr unique_ptr(unique_ptr<U, E>&& other) noexcept(std::is_nothrow_constructible_v<Deleter, E&&>) 
-    : ptr(other.ptr), deleter(std::forward<E>(other.deleter)) {
-        other.ptr = nullptr;
+    constexpr unique_ptr(unique_ptr<U, E>&& other) noexcept(std::is_nothrow_constructible_v<Deleter, E&&>) {
+        unique_ptr tmp(other.release(), std::forward<E>(other.get_deleter()));
+        tmp.swap(*this);
     }
 
     unique_ptr(const unique_ptr&) = delete; 
@@ -117,10 +117,8 @@ public:
     template <typename U, typename E>
     requires std::is_constructible_v<U*, T*> && std::is_constructible_v<Deleter, E&&>
     constexpr unique_ptr& operator=(unique_ptr<U, E>&& other) noexcept(std::is_nothrow_constructible_v<Deleter, E&&>) {
-        deleter(ptr);
-        ptr = other.ptr;
-        other.ptr = nullptr;
-        deleter = std::move(other.deleter);
+        unique_ptr tmp(other.release(), std::forward<E>(other.get_deleter()));
+        tmp.swap(*this);
         return *this;
     }
 
@@ -129,9 +127,6 @@ public:
     // Modifiers
 
     constexpr void reset(pointer new_ptr = pointer()) noexcept {
-        if (ptr) {
-            deleter(ptr);
-        }
         ptr = new_ptr;
     }
 
@@ -180,3 +175,124 @@ public:
 
 // Non-member functions
 
+template <typename T1, typename D1, typename T2, typename D2>
+constexpr bool operator==(const unique_ptr<T1, D1>& x, const unique_ptr<T2, D2>& y) {
+    return x.get() == y.get();
+}
+
+template <typename T, typename D>
+constexpr bool operator==(std::nullptr_t, const unique_ptr<T, D>& x) noexcept {
+    return x.get() == nullptr;
+}
+
+template <typename T, typename D>
+constexpr bool operator==(const unique_ptr<T, D>& x, std::nullptr_t) noexcept {
+    return x.get() == nullptr;
+}
+
+
+template <typename T1, typename D1, typename T2, typename D2>
+constexpr bool operator!=(const unique_ptr<T1, D1>& x, const unique_ptr<T2, D2>& y) {
+    return x.get() != y.get();
+}
+
+template <typename T, typename D>
+constexpr bool operator!=(std::nullptr_t, const unique_ptr<T, D>& x) noexcept {
+    return x.get() != nullptr;
+}
+
+template <typename T, typename D>
+constexpr bool operator!=(const unique_ptr<T, D>& x, std::nullptr_t) noexcept {
+    return x.get() != nullptr;
+}
+
+
+template <typename T1, typename D1, typename T2, typename D2>
+constexpr bool operator<(const unique_ptr<T1, D1>& x, const unique_ptr<T2, D2>& y) {
+    return std::less<>()(x.get(), y.get());
+}
+
+template <typename T, typename D>
+constexpr bool operator<(std::nullptr_t, const unique_ptr<T, D>& x) noexcept {
+    return std::less<>()(nullptr, x.get());
+}
+
+template <typename T, typename D>
+constexpr bool operator<(const unique_ptr<T, D>& x, std::nullptr_t) noexcept {
+    return std::less<>()(x.get(), nullptr);
+}
+
+
+template <typename T1, typename D1, typename T2, typename D2>
+constexpr bool operator<=(const unique_ptr<T1, D1>& x, const unique_ptr<T2, D2>& y) {
+    return !std::less<>()(y.get(), x.get());
+}
+
+template <typename T, typename D>
+constexpr bool operator<=(std::nullptr_t, const unique_ptr<T, D>& x) noexcept {
+    return !std::less<>()(x.get(), nullptr);
+}
+
+template <typename T, typename D>
+constexpr bool operator<=(const unique_ptr<T, D>& x, std::nullptr_t) noexcept {
+    return !std::less<>()(nullptr, x.get());
+}
+
+
+template <typename T1, typename D1, typename T2, typename D2>
+constexpr bool operator>(const unique_ptr<T1, D1>& x, const unique_ptr<T2, D2>& y) {
+    return std::less<>()(y.get(), x.get());
+}
+
+template <typename T, typename D>
+constexpr bool operator>(std::nullptr_t, const unique_ptr<T, D>& x) noexcept {
+    return std::less<>()(x.get(), nullptr);
+}
+
+template <typename T, typename D>
+constexpr bool operator>(const unique_ptr<T, D>& x, std::nullptr_t) noexcept {
+    return std::less<>()(nullptr, x.get());
+}
+
+
+template <typename T1, typename D1, typename T2, typename D2>
+constexpr bool operator>=(const unique_ptr<T1, D1>& x, const unique_ptr<T2, D2>& y) {
+    return !std::less<>()(x.get(), y.get());
+}
+
+template <typename T, typename D>
+constexpr bool operator>=(std::nullptr_t, const unique_ptr<T, D>& x) noexcept {
+    return !std::less<>()(nullptr, x.get());
+}
+
+template <typename T, typename D>
+constexpr bool operator>=(const unique_ptr<T, D>& x, std::nullptr_t) noexcept {
+    return !std::less<>()(x.get(), nullptr);
+}
+
+
+// since C++20
+// template <typename T1, typename D1, typename T2, typename D2>
+// requires std::three_way_comparable_with<typename unique_ptr<T1, D1>::pointer, typename unique_ptr<T2, D2>::pointer>
+// std::compare_three_way_result_t<typename unique_ptr<T1, D1>::pointer, typename unique_ptr<T2, D2>::pointer> 
+// operator<=>(const unique_ptr<T1, D1>& x, const unique_ptr<T2, D2>& y) {
+//     return x.get() <=> y.get();
+// }
+
+
+template <typename T, typename D>
+constexpr void swap(std::unique_ptr<T, D>& lhs, std::unique_ptr<T, D>& rhs) 
+noexcept(std::conjunction_v<std::is_nothrow_move_constructible<D>, std::is_nothrow_move_assignable<D>>) {
+    lhs.swap(rhs);
+}
+
+template <typename CharT, typename Traits, typename T, typename D>
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const std::unique_ptr<T, D>& p) {
+    return os << p.get();
+}
+
+
+template <typename T, typename... Args>
+constexpr unique_ptr<T> make_unique( Args&&... args) {
+    return unique_ptr(new T(std::forward<Args>(args)...));
+}
