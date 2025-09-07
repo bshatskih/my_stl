@@ -173,6 +173,55 @@ public:
 };
 
 
+template <typename T, typename D>
+class unique_ptr<T[], D> {
+    T* ptr;
+    [[no_unique_address]] D deleter;
+
+public:
+    using pointer = T*;
+    using element_type = T;
+    using deleter_type = Deleter;
+
+    // Constructors
+
+    constexpr unique_ptr() noexcept : ptr(nullptr) {}
+
+    constexpr unique_ptr(std::nullptr_t) noexcept : ptr(nullptr) {}
+
+    template <typename U>
+    requires std::convertible_to<U(*)[], T(*)[]>
+    explicit constexpr unique_ptr(U* p) noexcept(std::is_nothrow_default_constructible_v<deleter_type>) : ptr(p) {}
+
+    template <typename U>
+    requires std::convertible_to<U(*)[], T(*)[]>
+    explicit constexpr unique_ptr(U* p, const deleter_type& del) noexcept(std::is_nothrow_copy_constructible_v<deleter_type>) : ptr(p), deleter(del) {}
+
+    template <typename U>
+    requires std::convertible_to<U(*)[], T(*)[]>
+    constexpr unique_ptr(U* p, deleter_type&& d) noexcept(std::is_nothrow_move_constructible_v<deleter_type>) : ptr(p), deleter(std::move(d)) {}
+
+    constexpr unique_ptr(std::nullptr_t, const deleter_type& del) noexcept(std::is_nothrow_copy_constructible_v<deleter_type>) : ptr(nullptr), deleter(del) {}
+
+    constexpr unique_ptr(std::nullptr_t, deleter_type&& d) noexcept(std::is_nothrow_move_constructible_v<deleter_type>) : ptr(nullptr), deleter(std::move(d)) {};
+
+    constexpr unique_ptr(unique_ptr&& other) noexcept(std::is_nothrow_move_constructible_v<deleter_type>): ptr(other.ptr), deleter(std::move(other.deleter)) {
+        other.ptr = nullptr;
+    }
+
+    template <typename U, typename E>
+    requires std::convertible_to<U(*)[], T(*)[]> && std::constructible_from<deleter_type, E&&>
+    constexpr unique_ptr(unique_ptr<U, E>&& other) noexcept(std::is_nothrow_constructible_v<deleter_type, E&&>)
+    : ptr(other.ptr), deleter(std::move(other.get_deleter())) {
+        other.ptr = nullptr;
+    }
+
+    unique_ptr(const unique_ptr&) = delete;
+
+
+};
+
+
 // Non-member functions
 
 template <typename T1, typename D1, typename T2, typename D2>
