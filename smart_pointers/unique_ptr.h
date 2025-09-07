@@ -51,6 +51,8 @@ public:
     using element_type = T;
     using deleter_type = Deleter;
 
+
+
     // Constructors
 
     constexpr unique_ptr() noexcept : ptr(nullptr) {}
@@ -59,36 +61,31 @@ public:
 
     explicit constexpr unique_ptr(pointer p) noexcept : ptr(p) {}
 
-    explicit constexpr unique_ptr(pointer p, const Deleter& d) noexcept : ptr(p), deleter(d) {};
+    explicit constexpr unique_ptr(pointer p, const Deleter& d) noexcept : ptr(p), deleter(d) {}
 
-    constexpr unique_ptr(pointer p, Deleter&& d) noexcept(std::is_nothrow_move_constructible_v<Deleter>) : ptr(p), deleter(std::move(d)) {};
+    constexpr unique_ptr(pointer p, Deleter&& d) noexcept(std::is_nothrow_move_constructible_v<Deleter>) : ptr(p), deleter(std::move(d)) {}
 
-    constexpr unique_ptr(std::nullptr_t, const Deleter& d) noexcept(std::is_nothrow_copy_constructible_v<Deleter>) : ptr(nullptr), deleter(d) {};
+    constexpr unique_ptr(std::nullptr_t, const Deleter& d) noexcept(std::is_nothrow_copy_constructible_v<Deleter>) : ptr(nullptr), deleter(d) {}
     
-    constexpr unique_ptr(std::nullptr_t, Deleter&& d) noexcept(std::is_nothrow_move_constructible_v<Deleter>) : ptr(nullptr), deleter(std::move(d)) {};
+    constexpr unique_ptr(std::nullptr_t, Deleter&& d) noexcept(std::is_nothrow_move_constructible_v<Deleter>) : ptr(nullptr), deleter(std::move(d)) {}
 
-    // Используем std::forward вместо std::move, чтобы сохранить значение категории (lvalue/rvalue) переданного объекта deleter
     constexpr unique_ptr(unique_ptr&& other) noexcept(std::is_nothrow_move_constructible_v<Deleter>)
-    requires std::is_move_constructible_v<Deleter> 
     : ptr(other.ptr), deleter(std::move(other.deleter)) {
         other.ptr = nullptr;
-    } 
+    }
 
     template <typename U, typename E>
     requires std::convertible_to<U*, T*> && std::constructible_from<Deleter, E&&>
-    constexpr unique_ptr(unique_ptr<U, E>&& other) noexcept(std::is_nothrow_constructible_v<Deleter, E&&>) {
-        unique_ptr tmp(other.release(), std::forward<E>(other.get_deleter()));
-        tmp.swap(*this);
-    }
+    constexpr unique_ptr(unique_ptr<U, E>&& other) noexcept(std::is_nothrow_constructible_v<Deleter, E&&> && std::is_nothrow_convertible_v<U*, T*>) 
+    : ptr(other.release()), deleter(std::forward<E>(other.get_deleter())) {}
 
-    unique_ptr(const unique_ptr&) = delete; 
-
+    unique_ptr(const unique_ptr&) = delete;
 
 
 
     // Destructor
 
-    ~unique_ptr() noexcept {
+    ~unique_ptr() {
         if (ptr) {
             deleter(ptr);
         }
@@ -100,13 +97,9 @@ public:
 
     unique_ptr& operator=(const unique_ptr&) = delete;    
 
-    constexpr unique_ptr& operator=(unique_ptr&& other) noexcept(std::is_nothrow_move_assignable_v<Deleter>) {
-        if (this == &other) {
-            return *this;
-        }
-        unique_ptr tmp(std::move(other));
-        this->swap(tmp);               
-        return *this;
+
+    constexpr unique_ptr(unique_ptr&& other) noexcept(std::is_nothrow_move_constructible_v<Deleter>) : ptr(other.ptr), deleter(std::move(other.deleter)) {
+        other.ptr = nullptr;
     }
 
     constexpr unique_ptr& operator=(std::nullptr_t) noexcept {
@@ -115,12 +108,9 @@ public:
     }
 
     template <typename U, typename E>
-    requires std::is_constructible_v<U*, T*> && std::is_constructible_v<Deleter, E&&>
-    constexpr unique_ptr& operator=(unique_ptr<U, E>&& other) noexcept(std::is_nothrow_constructible_v<Deleter, E&&>) {
-        unique_ptr tmp(other.release(), std::forward<E>(other.get_deleter()));
-        tmp.swap(*this);
-        return *this;
-    }
+    requires std::convertible_to<U*, T*> && std::constructible_from<Deleter, E&&>
+    constexpr unique_ptr(unique_ptr<U, E>&& other) noexcept(std::is_nothrow_constructible_v<Deleter, E&&> && std::is_nothrow_convertible_v<U*, T*>) 
+    : ptr(other.release()), deleter(std::forward<E>(other.get_deleter())) {}
 
 
 
@@ -144,7 +134,6 @@ public:
 
 
 
-
     // Observers
 
     constexpr pointer get() const noexcept {
@@ -163,11 +152,11 @@ public:
         return ptr != nullptr;
     }
 
-    T& operator*() const noexcept{
+    constexpr T& operator*() const noexcept{
         return *ptr;
     }
 
-    T* operator->() const noexcept {
+    constexpr T* operator->() const noexcept {
         return ptr;
     }
 };
@@ -182,6 +171,8 @@ public:
     using pointer = T*;
     using element_type = T;
     using deleter_type = Deleter;
+
+
 
     // Constructors
 
@@ -255,6 +246,7 @@ public:
     }
 
     unique_ptr& operator=(const unique_ptr&) = delete;
+
 
 
     // Modifiers
