@@ -173,10 +173,10 @@ public:
 };
 
 
-template <typename T, typename D>
-class unique_ptr<T[], D> {
+template <typename T, typename Deleter>
+class unique_ptr<T[], Deleter> {
     T* ptr;
-    [[no_unique_address]] D deleter;
+    [[no_unique_address]] Deleter deleter;
 
 public:
     using pointer = T*;
@@ -210,13 +210,51 @@ public:
     }
 
     template <typename U, typename E>
-    requires std::convertible_to<U(*)[], T(*)[]> && std::constructible_from<deleter_type, E&&>
+    requires std::is_array_v<U> && std::convertible_to<typename unique_ptr<U, E>::pointer, pointer> && std::constructible_from<deleter_type, E&&>
     constexpr unique_ptr(unique_ptr<U, E>&& other) noexcept(std::is_nothrow_constructible_v<deleter_type, E&&>)
     : ptr(other.ptr), deleter(std::move(other.get_deleter())) {
         other.ptr = nullptr;
     }
 
     unique_ptr(const unique_ptr&) = delete;
+
+
+
+    // Destructor
+
+    constexpr ~unique_ptr() {
+        deleter(ptr);
+    }   
+
+
+
+    // Assignment
+
+    constexpr unique_ptr& operator=(unique_ptr&& other) noexcept(std::is_nothrow_move_assignable_v<deleter_type>) {
+        if (this != std::addressof(other)) {
+            reset(other.release());
+            deleter = std::move(other.deleter);
+        }
+        return *this;
+    }
+
+    template <class U, class E>
+    requires std::is_array_v<U> && std::convertible_to<typename unique_ptr<U, E>::pointer, pointer> &&
+            std::assignable_from<deleter_type&, E&&> && (std::is_same_v<E, deleter_type> || !std::is_reference_v<deleter_type>)
+    constexpr unique_ptr& operator=(unique_ptr<U, E>&& other) noexcept(std::is_nothrow_assignable_v<deleter_type&, E&&>) {
+        if (this != std::addressof(other)) {
+            reset(other.release());                          
+            deleter = std::forward<E>(other.get_deleter());
+        }
+        return *this;
+    }
+
+    constexpr unique_ptr& operator=(std::nullptr_t) noexcept {
+        reset();
+    }
+
+    unique_ptr& operator=(const unique_ptr&) = delete;
+
 
 
 };
