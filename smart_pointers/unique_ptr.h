@@ -142,14 +142,14 @@ public:
         return old_ptr;
     }
 
-    constexpr pointer get() const noexcept {
-        return ptr;
-    }
-
 
 
 
     // Observers
+
+    constexpr pointer get() const noexcept {
+        return ptr;
+    }
 
     constexpr Deleter& get_deleter() noexcept {
         return deleter;
@@ -190,15 +190,15 @@ public:
     constexpr unique_ptr(std::nullptr_t) noexcept : ptr(nullptr) {}
 
     template <typename U>
-    requires std::convertible_to<U(*)[], T(*)[]>
+    requires std::is_array_v<U> && std::convertible_to<typename unique_ptr<U, Deleter>::pointer, pointer>
     explicit constexpr unique_ptr(U* p) noexcept(std::is_nothrow_default_constructible_v<deleter_type>) : ptr(p) {}
 
     template <typename U>
-    requires std::convertible_to<U(*)[], T(*)[]>
+    requires std::is_array_v<U> && std::convertible_to<typename unique_ptr<U, Deleter>::pointer, pointer>
     explicit constexpr unique_ptr(U* p, const deleter_type& del) noexcept(std::is_nothrow_copy_constructible_v<deleter_type>) : ptr(p), deleter(del) {}
 
     template <typename U>
-    requires std::convertible_to<U(*)[], T(*)[]>
+    requires std::is_array_v<U> && std::convertible_to<typename unique_ptr<U, Deleter>::pointer, pointer>
     constexpr unique_ptr(U* p, deleter_type&& d) noexcept(std::is_nothrow_move_constructible_v<deleter_type>) : ptr(p), deleter(std::move(d)) {}
 
     constexpr unique_ptr(std::nullptr_t, const deleter_type& del) noexcept(std::is_nothrow_copy_constructible_v<deleter_type>) : ptr(nullptr), deleter(del) {}
@@ -251,12 +251,59 @@ public:
 
     constexpr unique_ptr& operator=(std::nullptr_t) noexcept {
         reset();
+        return *this;
     }
 
     unique_ptr& operator=(const unique_ptr&) = delete;
 
 
+    // Modifiers
 
+    constexpr pointer release() noexcept {
+        pointer old_ptr = ptr;
+        ptr = nullptr;
+        return old_ptr;
+    }
+
+    template <typename U>
+    requires std::is_array_v<U> && std::convertible_to<U*, pointer>
+    void reset(U* p = nullptr) noexcept(std::is_nothrow_invocable_v<deleter_type&, pointer>) {
+        pointer old_ptr = ptr;
+        ptr = p;
+        if (old_ptr) {
+            get_deleter()(old_ptr);
+        }
+    }
+
+    void swap(unique_ptr& other) 
+    noexcept(std::conjunction_v<std::is_nothrow_move_constructible<Deleter>, std::is_nothrow_move_assignable<Deleter>>) {
+        std::swap(ptr, other.ptr);
+        std::swap(deleter, other.deleter);
+    }
+
+
+    
+    // Observers
+
+    constexpr pointer get() const noexcept {
+        return ptr;
+    }
+
+    constexpr Deleter& get_deleter() noexcept {
+        return deleter;
+    }
+
+    constexpr const Deleter& get_deleter() const noexcept {
+        return deleter;
+    }
+
+    constexpr explicit operator bool() const noexcept {
+        return ptr != nullptr;
+    }
+
+    constexpr T& operator[](std::size_t i) const {
+        return *(ptr + i);
+    }
 };
 
 
