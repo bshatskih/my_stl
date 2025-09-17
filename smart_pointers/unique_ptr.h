@@ -95,11 +95,15 @@ public:
 
     // Assignment
 
-    unique_ptr& operator=(const unique_ptr&) = delete;    
+    constexpr unique_ptr& operator=(const unique_ptr&) = delete;    
 
 
-    constexpr unique_ptr(unique_ptr&& other) noexcept(std::is_nothrow_move_constructible_v<Deleter>) : ptr(other.ptr), deleter(std::move(other.deleter)) {
-        other.ptr = nullptr;
+    constexpr unique_ptr& operator=(unique_ptr&& other) noexcept(std::is_nothrow_move_assignable_v<Deleter>) {
+        if (this != std::addressof(other)) {
+            reset(other.release());
+            deleter = std::move(other.deleter); 
+        }
+        return *this;
     }
 
     constexpr unique_ptr& operator=(std::nullptr_t) noexcept {
@@ -109,8 +113,21 @@ public:
 
     template <typename U, typename E>
     requires std::convertible_to<U*, T*> && std::constructible_from<Deleter, E&&>
-    constexpr unique_ptr(unique_ptr<U, E>&& other) noexcept(std::is_nothrow_constructible_v<Deleter, E&&> && std::is_nothrow_convertible_v<U*, T*>) 
-    : ptr(other.release()), deleter(std::forward<E>(other.get_deleter())) {}
+    constexpr unique_ptr& operator=(unique_ptr<U, E>&& other) 
+    noexcept(std::is_nothrow_convertible_v<U*, T*> && 
+            (std::is_assignable_v<Deleter&, E&&> ? std::is_nothrow_assignable_v<Deleter&, E&&> : std::is_nothrow_constructible_v<Deleter, E&&>)) {
+        if (this != std::addressof(other)) {
+            reset(other.release()); 
+
+            if constexpr (std::is_assignable_v<Deleter&, E&&>) {
+                deleter = std::forward<E>(other.get_deleter());
+            } else {
+                Deleter tmp(std::forward<E>(other.get_deleter()));
+                deleter = std::move(tmp);
+            }
+        }
+        return *this;
+    }
 
 
 
